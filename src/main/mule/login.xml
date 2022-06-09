@@ -1,0 +1,104 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<mule xmlns:os="http://www.mulesoft.org/schema/mule/os" xmlns:salesforce="http://www.mulesoft.org/schema/mule/salesforce"
+	xmlns:ee="http://www.mulesoft.org/schema/mule/ee/core"
+	xmlns:http="http://www.mulesoft.org/schema/mule/http" xmlns="http://www.mulesoft.org/schema/mule/core" xmlns:doc="http://www.mulesoft.org/schema/mule/documentation" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd
+http://www.mulesoft.org/schema/mule/http http://www.mulesoft.org/schema/mule/http/current/mule-http.xsd
+http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd
+http://www.mulesoft.org/schema/mule/salesforce http://www.mulesoft.org/schema/mule/salesforce/current/mule-salesforce.xsd
+http://www.mulesoft.org/schema/mule/os http://www.mulesoft.org/schema/mule/os/current/mule-os.xsd">
+	<salesforce:sfdc-config name="Salesforce_Config" doc:name="Salesforce Config" doc:id="b301bb11-c522-4369-b453-ff878fbb9799" >
+		<salesforce:basic-connection username="${secure::salesforce.username}" password="${secure::salesforce.password}" securityToken="${secure::salesforce.token}" />
+	</salesforce:sfdc-config>
+	<os:object-store name="Object_store" doc:name="Object store" doc:id="0bc69620-d5f8-4225-b767-010382640726" entryTtl="2" entryTtlUnit="MINUTES"/>
+	<flow name="loginFlow" doc:id="fef4527b-6373-4975-a590-e4689cc4c014">
+		<http:listener doc:name="Listener" doc:id="1b22182c-4c59-4b8d-9d28-6f656eff3640" config-ref="localhost" path="/login" allowedMethods="POST" />
+		<ee:transform doc:name="vars.username vars.password" doc:id="48d7e864-ef64-4156-81bd-a7765dfae77d">
+					<ee:message>
+						<ee:set-payload><![CDATA[%dw 2.0
+output application/json
+---
+payload]]></ee:set-payload>
+					</ee:message>
+			<ee:variables>
+				<ee:set-variable variableName="username"><![CDATA[%dw 2.0
+output application/json
+---
+payload.parts.username.content]]></ee:set-variable>
+				<ee:set-variable variableName="password"><![CDATA[%dw 2.0
+output application/json
+---
+payload.parts.password.content]]></ee:set-variable>
+			</ee:variables>
+				</ee:transform>
+		<choice doc:name="Check for username and password not empty" doc:id="b0fa956c-ac31-4b24-bd8c-49d1a2bc0043">
+			<when expression="#[isBlank(payload.parts.username.content) and isBlank(payload.parts.password.content)]">
+				<raise-error doc:name="Username and Password is missing." doc:id="77b0d992-9236-4179-ad11-1451ae816259" type="APP:LOGIN_DETAILS_MISSING" description="#[p('message.app.login_detail_missing')]" />
+			
+</when>
+			<when expression="#[isBlank(payload.parts.username.content)]">
+				<raise-error doc:name="Username missing" doc:id="43acc7b3-208f-4c41-8cdb-1b233ffcf825" type="APP:USERNAME_MISSING" description="#[p('message.app.username_missing')]" />
+			</when>
+			<when expression="#[isBlank(payload.parts.password.content)]">
+				<raise-error doc:name="Password missing." doc:id="8dd549e6-ba6a-45cb-b031-fafcfb77885e" type="APP:LOGIN_DETAILS_MISSING" description="#[p('message.app.password_missing')]" />
+			</when>
+			<otherwise>
+				<salesforce:query doc:name="Search username and password in Salesforce Account object." doc:id="a8861d35-0809-45c9-8cef-dd5b9a076489" config-ref="Salesforce_Config">
+					<salesforce:salesforce-query><![CDATA[SELECT Name, Active__c FROM ACCOUNT WHERE Name = ':username']]></salesforce:salesforce-query>
+					<salesforce:parameters><![CDATA[#[output application/java
+---
+{
+	"username" : "Navitas"
+}]]]></salesforce:parameters>
+				</salesforce:query>
+				<choice doc:name="Choice" doc:id="7efd0f6a-5967-4ac0-99a3-f190e957431e">
+					<when expression="#[sizeOf(payload) == 0]">
+						<raise-error doc:name="Invalid username or password." doc:id="f3fe4f67-5b28-48ad-9bc0-8b3b1bb4bad7" type="APP:INVALID_DETAILS" description="#[p('message.app.invalid_details')]" />
+					</when>
+					<when expression="#[sizeOf(payload) &gt; 0 and payload[0].Active__c == 'No']">
+						<raise-error doc:name="Account exist but not activated." doc:id="612de20e-9aa1-4b5f-b87d-2413f3503acf" type="APP:ACCOUNT_NOT_ACTIVATED" description="#[p('message.app.account_not_activated')]" />
+					</when>
+					<otherwise>
+						<set-variable value="#[%dw 2.0&#10;import dw::Crypto&#10;output application/json&#10;---&#10;Crypto::SHA1(vars.username as String)]" doc:name="Set OS Key" doc:id="2ee752b4-db4a-4230-997b-b47a60007bf7" variableName="key" />
+						<set-variable value="#[%dw 2.0&#10;output application/json&#10;---&#10;{&#10;	name: payload[0].Name,&#10;	ttl: now() as Number&#10;}]" doc:name="Set OS Value" doc:id="04342808-b1d8-4af1-8e7a-d5a5206892c0" variableName="value" />
+						<os:store doc:name="Store userdetails for future reference" doc:id="032ba091-301b-4097-9cec-ca97b4def2a2" key="#[vars.key]" objectStore="Object_store">
+							<os:value><![CDATA[#[vars.value]]]></os:value>
+						</os:store>
+						<set-payload value="#[vars.key]" doc:name="Retrun token key to make other requests." doc:id="c0401a7f-c407-4035-ae79-495a00cb8600" />
+					</otherwise>
+				</choice>
+			</otherwise>
+		</choice>
+		<error-handler>
+			<on-error-propagate enableNotifications="true" logException="true" doc:name="On Error Propagate" doc:id="abf435fd-f07e-441f-ac76-a684b9c6cccb" type="SALESFORCE:CONNECTIVITY, SALESFORCE:INVALID_INPUT, SALESFORCE:INVALID_RESPONSE, SALESFORCE:LIMIT_EXCEEDED, SALESFORCE:MUTUAL_AUTHENTICATION_FAILED, SALESFORCE:NOT_FOUND, SALESFORCE:TIMEOUT">
+				<ee:transform doc:name="Transform Message" doc:id="b63c3c81-1af3-4698-8837-bf9e1fefb279">
+					<ee:message>
+						<ee:set-payload><![CDATA[%dw 2.0
+output application/json
+---
+{
+	"msg" : "Hello",
+	"error" : error	
+}
+]]></ee:set-payload>
+					</ee:message>
+				</ee:transform>
+			</on-error-propagate>
+		</error-handler>
+	</flow>
+	<sub-flow name="APP-ERROR-SUB-FLOW" doc:id="1d54f1e3-d1c9-417d-a25a-49e37e54aaa2" >
+		<ee:transform doc:name="Transform Message" doc:id="5db3d3cb-281c-40c2-a1b9-2ecaa8d05852">
+					<ee:message>
+						<ee:set-payload><![CDATA[%dw 2.0
+output application/json
+---
+((error.errorType.identifier as String default "") ++ " : " ++ (error.cause.localizedMessage as String default ""))
+]]></ee:set-payload>
+					</ee:message>
+				</ee:transform>
+		<async doc:name="Async" doc:id="e39e2f74-5cc0-4394-98c6-a6af13db0eac">
+					<set-payload value='#[((error.errorType.identifier as String default "") ++ " : " ++ (error.cause.localizedMessage as String default ""))]' doc:name="Set Payload" doc:id="275fe7b6-fb56-425c-864b-7c6994e5e754" />
+					<flow-ref doc:name="Flow Reference" doc:id="3f838704-df95-4f2d-9795-9ea1c67c373a" name="mule-s3buckt-intigrationFlow" />
+				</async>
+	</sub-flow>
+</mule>

@@ -1,0 +1,14 @@
+{
+      "id": "s3",
+      "type": "TV Show",
+      "title": "Ganglands",
+      "director": ["Julien Leclercq"],
+      "cast": ["Sami Bouajila", "Tracy Gotoas", "Samuel Jouy", "Nabiha Akkari", "Sofia Lesaffre"],
+      "country": "United States",
+      "date_added": "September 25, 2021",
+      "release_year": "2020",
+      "rating": "PG-13",
+      "duration": "90 min",
+      "geners": ["International TV Shows", "TV Dramas", "TV Mysteries"],
+      "description": "As her father nears the end of his life, filmmaker Kirsten Johnson stages his death in inventive and comical ways to help them both face the inevitable."
+    }

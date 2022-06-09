@@ -1,0 +1,10 @@
+{
+  "payload": "LOGIN_DETAILS_MISSING : Username field in missing",
+  "date": "2022-06-06"
+}{
+  "payload": "LOGIN_DETAILS_MISSING : User name and Password are missing",
+  "date": "2022-06-06"
+}{
+  "payload": "LOGIN_DETAILS_MISSING : Password field is missing",
+  "date": "2022-06-06"
+}

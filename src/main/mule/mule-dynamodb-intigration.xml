@@ -1,5 +1,160 @@
 <?xml version="1.0" encoding="UTF-8"?>
 
-<mule xmlns="http://www.mulesoft.org/schema/mule/core" xmlns:doc="http://www.mulesoft.org/schema/mule/documentation"
-	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-	xsi:schemaLocation="http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd"></mule>
+<mule xmlns:validation="http://www.mulesoft.org/schema/mule/validation" xmlns:os="http://www.mulesoft.org/schema/mule/os"
+	xmlns:s3="http://www.mulesoft.org/schema/mule/s3"
+	xmlns:file="http://www.mulesoft.org/schema/mule/file" xmlns:dynamodb="http://www.mulesoft.org/schema/mule/dynamodb" xmlns:secure-properties="http://www.mulesoft.org/schema/mule/secure-properties" xmlns:ee="http://www.mulesoft.org/schema/mule/ee/core" xmlns:tls="http://www.mulesoft.org/schema/mule/tls" xmlns:http="http://www.mulesoft.org/schema/mule/http" xmlns="http://www.mulesoft.org/schema/mule/core" xmlns:doc="http://www.mulesoft.org/schema/mule/documentation" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd
+http://www.mulesoft.org/schema/mule/http http://www.mulesoft.org/schema/mule/http/current/mule-http.xsd
+http://www.mulesoft.org/schema/mule/tls http://www.mulesoft.org/schema/mule/tls/current/mule-tls.xsd
+http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd
+http://www.mulesoft.org/schema/mule/secure-properties http://www.mulesoft.org/schema/mule/secure-properties/current/mule-secure-properties.xsd
+http://www.mulesoft.org/schema/mule/dynamodb http://www.mulesoft.org/schema/mule/dynamodb/current/mule-dynamodb.xsd
+http://www.mulesoft.org/schema/mule/file http://www.mulesoft.org/schema/mule/file/current/mule-file.xsd
+http://www.mulesoft.org/schema/mule/s3 http://www.mulesoft.org/schema/mule/s3/current/mule-s3.xsd
+http://www.mulesoft.org/schema/mule/os http://www.mulesoft.org/schema/mule/os/current/mule-os.xsd
+http://www.mulesoft.org/schema/mule/validation http://www.mulesoft.org/schema/mule/validation/current/mule-validation.xsd">
+	<global-property doc:name="Global Property" doc:id="5b06a8d4-12ac-4135-925d-1d004cf15162" name="env" value="localhost" />
+	<configuration-properties doc:name="Configuration properties" doc:id="dad7a6e9-fe79-4df6-b8d7-2f3b00026bb2" file="${env}-properties.yaml" />
+	<http:listener-config name="localhost" doc:name="HTTP Listener config" doc:id="57f060cc-46ee-4a08-a1c0-adfae16a38d5" >
+		<http:listener-connection host="0.0.0.0" port="${http.port}" >
+		</http:listener-connection>
+	</http:listener-config>
+	<secure-properties:config name="Secure_Properties_Config" doc:name="Secure Properties Config" doc:id="d99adc7c-b11c-4083-9bea-154e0d43b979" file="secureProperties.yaml" key='mulesoft' >
+		<secure-properties:encrypt algorithm="Blowfish" />
+	</secure-properties:config>
+	<file:config name="File_Config" doc:name="File Config" doc:id="05f24e3a-7388-4fd7-826e-5649a5562c24" />
+	<dynamodb:config name="Amazon_DynamoDB_Configuration" doc:name="Amazon DynamoDB Configuration" doc:id="3c061d52-f225-40cd-9311-07eb7861895a" >
+		<dynamodb:basic-connection accessKey="${secure::aws.accesskey}" secretKey="${secure::aws.secretkey}" region="${secure::aws.region}"/>
+	</dynamodb:config>
+	<s3:config name="Amazon_S3_Configuration" doc:name="Amazon S3 Configuration" doc:id="ab10dd8b-4249-4e62-abe0-0c3d3fcff307" >
+		<s3:basic-connection accessKey="${secure::aws.accesskey}" secretKey="${secure::aws.secretkey}" region="${secure::aws.region}" />
+	</s3:config>
+	<configuration doc:name="Configuration" doc:id="9d16b374-1e51-4968-a0cd-d7f706144926" defaultErrorHandler-ref="GlobalErrorHandlerError_Handler" />
+	<validation:config name="Validation_Config" doc:name="Validation Config" doc:id="e73996c3-bad2-4e14-a7c9-d5733f3108ac" />
+	<flow name="mule-dynamodb-intigrationFlow" doc:id="4d67e36c-6e63-44ae-b82f-6ae202626642" >
+		<http:listener doc:name="Listener" doc:id="278c22f9-f95f-4a31-81b5-e00b3c4ace43" config-ref="localhost" path="/dynamo" allowedMethods="POST"/>
+		<os:contains doc:name="Check for token key in Object Store" doc:id="550703f3-373f-4e06-b4d0-d1e7eae12d73" key="#[attributes.headers.token]" objectStore="Object_store" target="loginStatus"/>
+		<choice doc:name="Choice" doc:id="c259436b-e21b-4063-bcab-a8ae6c9f1277" >
+			<when expression="#[vars.loginStatus == false]">
+				<raise-error doc:name="login status is false" doc:id="db5077b2-b799-4bcd-866c-c6225183dea3" type="APP:SESSION_EXPIRED" description="#[p('message.app.session_expired')]"/>
+			</when>
+			<otherwise >
+				<os:store doc:name="User session extend." doc:id="6b11425b-6a93-4624-95ce-5716f09836d9" key="#[attributes.headers.token]">
+					<os:value ><![CDATA[#[%dw 2.0
+output application/json
+---
+{
+	ttl: (now() as Number) + (p('session.ttl') as Number)
+}]]]></os:value>
+				</os:store>
+				<validation:is-not-blank-string doc:name="check title field for null/blank/empty" doc:id="44186036-0711-490f-8400-a2d65e065ba6" value='#[payload."title"]' config-ref="Validation_Config" message='#["VALIDATION_FAILED : Title must not be empty/null."]'/>
+				<validation:is-not-blank-string doc:name="check type field for null/blank/empty" doc:id="64cdadbd-6cf7-4f93-995d-e054be01d0f7" config-ref="Validation_Config" value='#[payload."type"]' message='#["VALIDATION_FAILED : Type field must not be blank."]'/>
+				<ee:transform doc:name="format input json" doc:id="351b3ae8-d197-4070-901e-1142501fdada">
+			<ee:message>
+						<ee:set-payload resource="dwl/input-payload-to-output-payload.dwl" />
+			</ee:message>
+		</ee:transform>
+				<ee:transform doc:name="prepare json for dynamodb" doc:id="892bfaf2-0060-42c4-bc3e-5a402a963918">
+				<ee:message>
+						<ee:set-payload resource="dwl/prepare-json-for-dynamodb.dwl" />
+				</ee:message>
+			</ee:transform>
+				<dynamodb:put-item doc:name="Put item" doc:id="08349eeb-709d-49ce-b868-f81bd0640a77" config-ref="Amazon_DynamoDB_Configuration" tableName="netflix">
+					<dynamodb:item ><![CDATA[#[pay]]]></dynamodb:item>
+				</dynamodb:put-item>
+				<ee:transform doc:name="Transform Message" doc:id="fba65178-fd9e-41f7-a882-df0c77dc3459">
+					<ee:message>
+						<ee:set-payload><![CDATA[%dw 2.0
+output application/json
+---
+payload]]></ee:set-payload>
+					</ee:message>
+				</ee:transform>
+				<file:write doc:name="Write" doc:id="c5a6ded3-03b4-474f-bb1b-909b9dee56d7" config-ref="File_Config" path="C:\Users\Rajesh\Documents\mulesoft\processedData.json" mode="APPEND" />
+			</otherwise>
+		</choice>
+		<error-handler>
+			<on-error-propagate enableNotifications="true" logException="true" doc:name="On Error Propagate" doc:id="5e3eb857-a3b0-4e21-b678-f9aaf55085bf" type="VALIDATION:*">
+				<set-payload value='#[error.description]' doc:name="Set Payload" doc:id="1ac1d6a1-e58b-472b-a599-51e5f1e82065" />
+				<flow-ref doc:name="Flow Reference" doc:id="1a6bbf27-ef49-49b8-9d10-9710276ba89f" name="mule-s3buckt-intigrationFlow"/>
+			</on-error-propagate>
+		</error-handler>
+	</flow>
+	<flow name="mule-dynamodb-intigrationFlow1" doc:id="328adf2d-34eb-4859-a553-dd80e00a26de" >
+		<http:listener doc:name="Listener" doc:id="266fdf68-70b0-4983-9f81-833c2cbb4540" config-ref="localhost" path="/dynamo" allowedMethods="GET"/>
+		<os:contains doc:name="Check for token key in Object Store" doc:id="1e2f25fd-ba12-4f35-a235-64ffdb6dcfd6" key="#[attributes.headers.token]" objectStore="Object_store" target="loginStatus"/>
+		<choice doc:name="Choice" doc:id="e8595b55-3e5e-48fa-8c3f-739ec60a20e8" >
+			<when expression="#[vars.loginStatus == false]">
+				<raise-error doc:name="login status is false" doc:id="0f30b583-46e3-4fc2-a9d3-5d4bb70dccc7" type="APP:SESSION_EXPIRED" description="#[p('message.app.session_expired')]"/>
+			</when>
+			<otherwise >
+			
+				<os:store doc:name="User session extend." doc:id="9dc5506f-99d0-4121-a61c-edb11363190e" key="#[attributes.headers.token]">
+					<os:value ><![CDATA[#[%dw 2.0
+output application/json
+---
+{
+	ttl: (now() as Number) + (p('session.ttl') as Number)
+}]]]></os:value>
+				</os:store>
+				<dynamodb:get-item doc:name="Get item" doc:id="5cfc0c82-396f-4e59-ab15-0dcde4277638" config-ref="Amazon_DynamoDB_Configuration" tableName="netflix">
+					<reconnect />
+					<dynamodb:key><![CDATA[#[%dw 2.0
+output application/json
+---
+{
+	"title": {"S": "Dick Johnson Is Dead"},
+	"type": {"S": "Movie"}
+}]]]></dynamodb:key>
+				</dynamodb:get-item>
+				<ee:transform doc:name="Transform Message" doc:id="0891146d-20fc-4275-abcf-4f8988322f71" >
+					<ee:message >
+						<ee:set-payload ><![CDATA[%dw 2.0
+output application/json
+---
+payload]]></ee:set-payload>
+					</ee:message>
+				</ee:transform>
+			</otherwise>
+		</choice>
+	</flow>
+	<flow name="mule-dynamodb-intigrationFlow2" doc:id="d6dd79fe-9de1-47b2-95b7-f144e5e17c48" >
+		<http:listener doc:name="Listener" doc:id="04df3e4e-3919-436b-a4b9-868cef20fe14" config-ref="localhost" path="/dynamo" allowedMethods="DELETE"/>
+		<os:contains doc:name="Check for token key in Object Store" doc:id="b053ae40-a1ec-4a44-a530-4ae03c05d0a3" key="#[attributes.headers.token]" objectStore="Object_store" target="loginStatus"/>
+		<choice doc:name="Choice" doc:id="4c9f91ec-60cc-4368-974c-fc8ce4d8e351" >
+			<when expression="#[vars.loginStatus == false]">
+				<raise-error doc:name="login status is false" doc:id="225a36fe-07e9-4459-aae5-7c7c1b5b53d1" type="APP:SESSION_EXPIRED" description="#[p('message.app.session_expired')]"/>
+			</when>
+			<otherwise >
+				<os:store doc:name="User session extend." doc:id="00eb3ad2-786a-45a0-9d4e-5b4baaee3d2f" key="#[attributes.headers.token]">
+					<os:value ><![CDATA[#[%dw 2.0
+output application/json
+---
+{
+	ttl: (now() as Number) + (p('session.ttl') as Number)
+}]]]></os:value>
+				</os:store>
+				<dynamodb:delete-item doc:name="Delete item" doc:id="04743b4d-dd32-4ceb-bf79-ff52e2f58c67" config-ref="Amazon_DynamoDB_Configuration" tableName="netflix">
+					<dynamodb:primarykey ><![CDATA[#[%dw 2.0
+output application/json
+---
+{
+	"title" : {"S" : "Dick Johnson Is Dead"},
+	"type" : {"S" : "TV Show"}
+}]]]></dynamodb:primarykey>
+				</dynamodb:delete-item>
+				<ee:transform doc:name="Transform Message" doc:id="be0ca43b-1be1-415b-9aa6-57ef1b4250e2">
+			<ee:message>
+				<ee:set-payload><![CDATA[%dw 2.0
+output application/json
+---
+{
+	"payload" : payload,
+	"attributes" : attributes
+}
+]]></ee:set-payload>
+			</ee:message>
+		</ee:transform>
+			</otherwise>
+		</choice>
+	</flow>
+</mule>

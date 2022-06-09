@@ -1,0 +1,58 @@
+{
+  "payload": "SESSION_EXPIRED : Please login again.",
+  "date": 1654723215
+}{
+  "payload": "SESSION_EXPIRED : Please login again.",
+  "date": 1654723481
+}{
+  "payload": "SESSION_EXPIRED : Please login again.",
+  "date": 1654724116
+}{
+  "payload": "VALIDATION_EXCEPTION : The provided key element does not match the schema (Service: AmazonDynamoDBv2; Status Code: 400; Error Code: ValidationException; Request ID: DV57CQ7K76IV7AK8CN9CVV6HKFVV4KQNSO5AEMVJF66Q9ASUAAJG; Proxy: null)",
+  "date": 1654724123
+}{
+  "payload": "SESSION_EXPIRED : please login again.",
+  "date": 1654724453
+}{
+  "payload": "SESSION_EXPIRED : Please login again.",
+  "date": 1654727885
+}{
+  "payload": "SESSION_EXPIRED : Please login again.",
+  "date": 1654727887
+}{
+  "payload": "SESSION_EXPIRED : Please login again.",
+  "date": 1654727887
+}{
+  "payload": "SESSION_EXPIRED : Please login again.",
+  "date": 1654727888
+}{
+  "payload": "SESSION_EXPIRED : Please login again.",
+  "date": 1654728250
+}{
+  "payload": "SESSION_EXPIRED : Please login again.",
+  "date": 1654728253
+}{
+  "payload": "SESSION_EXPIRED : Please login again.",
+  "date": 1654728255
+}{
+  "payload": "SESSION_EXPIRED : Please login again.",
+  "date": 1654757425
+}{
+  "payload": "VALIDATION FAIL : Type must not be empty.",
+  "date": 1654769588
+}{
+  "payload": "VALIDATION_FAILED : Type field must not be empty/null.",
+  "date": 1654769989
+}{
+  "payload": "VALIDATION_FAILED : Type field must not be blank.",
+  "date": 1654770532
+}{
+  "payload": "VALIDATION_FAILED : Title must not be empty/null.",
+  "date": 1654770545
+}{
+  "payload": "SESSION_EXPIRED : SESSION_EXPIRED : Please login again.",
+  "date": 1654776720
+}{
+  "payload": "SESSION_EXPIRED : SESSION_EXPIRED : Please login again.",
+  "date": 1654776885
+}

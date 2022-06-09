@@ -1,0 +1,21 @@
+%dw 2.0
+
+type auto_14eb6b0b_0886_4959_884b_db29eb0742d3_Output_Variables_bucketList = Array<org_mule_extension_s3_api_model_Bucket>
+type org_mule_extension_s3_api_model_Bucket = {|
+  creationDate?: DateTime {"typeId": "java.time.LocalDateTime"}, 
+  name?: String, 
+  owner?: org_mule_extension_s3_api_model_Owner
+|} {"typeAlias": "Bucket",
+"class": "org.mule.extension.s3.api.model.Bucket",
+"typeId": "org.mule.extension.s3.api.model.Bucket"}
+type org_mule_extension_s3_api_model_Owner = {|
+  displayName?: String, 
+  id?: String
+|} {"typeAlias": "Owner",
+"class": "org.mule.extension.s3.api.model.Owner",
+"typeId": "org.mule.extension.s3.api.model.Owner"}
+
+
+
+
+

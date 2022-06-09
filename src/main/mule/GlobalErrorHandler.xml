@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<mule xmlns:ee="http://www.mulesoft.org/schema/mule/ee/core" xmlns="http://www.mulesoft.org/schema/mule/core"
+	xmlns:doc="http://www.mulesoft.org/schema/mule/documentation"
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd
+http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd">
+	<error-handler name="GlobalErrorHandlerError_Handler" doc:id="df5d1735-07be-4407-bfa9-4d2732a1c36e" >
+		<on-error-continue enableNotifications="true" logException="true" doc:name="On Error Continue" doc:id="89640181-7477-4105-905d-736664e2e320" type="APP:*">
+			<ee:transform doc:name="Transform Message" doc:id="b84a1abc-29c2-4e57-8ef8-8e02502cabac" >
+				<ee:message >
+					<ee:set-payload ><![CDATA[%dw 2.0
+output application/json
+---
+((error.errorType.identifier as String default "") ++ " : " ++ (error.cause.localizedMessage as String default ""))
+]]></ee:set-payload>
+				</ee:message>
+			</ee:transform>
+			<async doc:name="Async" doc:id="62c2e8e2-67e0-424c-a6ef-501479ac8a76" >
+				<set-payload value='#[((error.errorType.identifier as String default "") ++ " : " ++ (error.cause.localizedMessage as String default ""))]' doc:name="Set Payload" doc:id="a33455b3-ae65-4d2c-a781-a142a2b03144" />
+				<flow-ref doc:name="Flow Reference" doc:id="3f2bcad9-180d-42b5-8de6-d15d0fb18203" name="mule-s3buckt-intigrationFlow"/>
+			</async>
+		</on-error-continue>
+		<on-error-continue enableNotifications="true" logException="true" doc:name="On Error Continue" doc:id="0315b8f4-a971-4964-9cbd-b567e2e9ca33" type="DYNAMODB:*">
+			<ee:transform doc:name="Transform Message" doc:id="614d155a-d357-4921-8652-2240a20e408a" >
+				<ee:message >
+					<ee:set-payload ><![CDATA[%dw 2.0
+output application/json
+---
+((error.errorType.identifier as String default "") ++ " : " ++ (error.cause.localizedMessage as String default ""))
+]]></ee:set-payload>
+				</ee:message>
+			</ee:transform>
+			<async doc:name="Async" doc:id="71a3f271-2a89-47e3-96ca-8d34ce722265" >
+				<set-payload value='#[((error.errorType.identifier as String default "") ++ " : " ++ (error.cause.localizedMessage as String default ""))]' doc:name="Set Payload" doc:id="bc0629d7-276d-4d13-b5b5-ff24044891af" />
+				<flow-ref doc:name="Flow Reference" doc:id="74556f6f-bf79-4051-bddc-477c19694076" name="mule-s3buckt-intigrationFlow" />
+			</async>
+		</on-error-continue>
+	</error-handler>
+</mule>

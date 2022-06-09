@@ -1,0 +1,11 @@
+https:
+  port: "8082"
+  
+message:
+  app:
+    login_detail_missing: "LOGIN_USERNAME_AND_PASSWORD_MISSING : User name and password is missing."
+    username_missing : "LOGIN_USERNAME_MISSING : Username is missing."
+    password_missing : "LOGIN_PASSWORD_MISSING : Password is missing."
+    invalid_details : "INVALID_DETAILS : Invalid username or password."
+    account_not_activated : "ACCOUNT_NOT_ACTIVATED : Account is not activated."
+    session_expired : "Please login again."  

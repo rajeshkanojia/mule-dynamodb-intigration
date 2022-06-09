@@ -1,0 +1,41 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<mule xmlns:file="http://www.mulesoft.org/schema/mule/file" xmlns:ee="http://www.mulesoft.org/schema/mule/ee/core"
+	xmlns:s3="http://www.mulesoft.org/schema/mule/s3"
+	xmlns="http://www.mulesoft.org/schema/mule/core" xmlns:doc="http://www.mulesoft.org/schema/mule/documentation" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd
+http://www.mulesoft.org/schema/mule/s3 http://www.mulesoft.org/schema/mule/s3/current/mule-s3.xsd
+http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd
+http://www.mulesoft.org/schema/mule/file http://www.mulesoft.org/schema/mule/file/current/mule-file.xsd">
+	<file:config name="File_Config1" doc:name="File Config" doc:id="db2386ef-1703-44ac-971c-b70e54a01337" />
+	<flow name="mule-s3buckt-intigrationFlow" doc:id="2f4505ed-16e7-4472-b2c1-3316cb78f253" >
+		<s3:list-buckets doc:name="List buckets" doc:id="e9b07ca8-99a4-4cfb-ae33-083de46689ed" config-ref="Amazon_S3_Configuration" region="${secure::aws.region}" target="bucketList"/>
+		<choice doc:name="Choice" doc:id="cbe82ece-d6ae-4a77-9e95-ea63d07698dc" >
+			<when expression='#[vars.bucketList.name contains ("mule-error")]'>
+				<ee:transform doc:name="Transform Message" doc:id="a87ed386-b11d-41f8-a4cf-b66f787972b3">
+			<ee:message>
+				<ee:set-payload><![CDATA[%dw 2.0
+output application/json
+---
+{
+ "payload": payload,
+ "date" : now() as Number
+ }]]></ee:set-payload>
+			</ee:message>
+		</ee:transform>
+				<flow-ref doc:name="Flow Reference" doc:id="900474e4-3e27-4217-9c3c-f918965095e7" name="log-error-sub-flow"/>
+			</when>
+			<otherwise >
+				<s3:create-bucket doc:name="Create bucket" doc:id="2781dcf2-0519-4d65-86c2-e9dacf6c6036" config-ref="Amazon_S3_Configuration" bucketName='mule-error' region="${secure::aws.region}"/>
+			</otherwise>
+		</choice>
+	</flow>
+	<sub-flow name="log-error-sub-flow" doc:id="14eb6b0b-0886-4959-884b-db29eb0742d3" >
+		<set-variable value='#["C:\\Users\\Rajesh\\AnypointStudio\\studio-workspace\\mule-dynamodb-intigration\\src\\main\\resources\log\\" ++ now() as String {format: "y-MM-dd"} ++ "-error.txt"]' doc:name="Set Variable" doc:id="c5bb2309-3c91-4541-bfe2-e859c0ed9fb7" variableName="logFileName"/>
+		<file:write doc:name="Write" doc:id="3c81183b-1e09-46c8-a5f6-f50600e17564" config-ref="File_Config1" mode="APPEND" lock="true" path="#[vars.logFileName]"/>
+		<file:read doc:name="Read" doc:id="a7e3865a-12c2-42d3-9a99-09e46e2c162d" config-ref="File_Config1" target="errorlog" lock="true" path='#[vars.logFileName]'/>
+		<s3:create-object doc:name="Create object" doc:id="cf79921d-ac1b-47c9-938e-2b4b9faaa2ad" config-ref="Amazon_S3_Configuration" bucketName="mule-error" key='#[now() as String {format: "y-MM-dd"} ++ "-error.txt"]' target="s3BucketResponse">
+			<reconnect-forever />
+			<s3:object-content ><![CDATA[#[vars.errorlog]]]></s3:object-content>
+		</s3:create-object>
+	</sub-flow>
+</mule>

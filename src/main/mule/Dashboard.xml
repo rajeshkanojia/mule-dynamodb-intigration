@@ -1,0 +1,47 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<mule xmlns:http="http://www.mulesoft.org/schema/mule/http" xmlns:os="http://www.mulesoft.org/schema/mule/os"
+	xmlns:ee="http://www.mulesoft.org/schema/mule/ee/core"
+	xmlns="http://www.mulesoft.org/schema/mule/core" xmlns:doc="http://www.mulesoft.org/schema/mule/documentation" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd
+http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd
+http://www.mulesoft.org/schema/mule/os http://www.mulesoft.org/schema/mule/os/current/mule-os.xsd
+http://www.mulesoft.org/schema/mule/http http://www.mulesoft.org/schema/mule/http/current/mule-http.xsd">
+	<flow name="DashboardFlow" doc:id="b23795ab-e004-42a7-8013-5db76d94b47b" >
+		<http:listener doc:name="Listener" doc:id="95229c8a-3e63-4183-b05b-7d89f6f3bb88" config-ref="localhost" path="/dashboard"/>
+		<os:contains doc:name="Check for token key in Object Store" doc:id="860bd961-c2eb-4fcd-8769-d1a19c5c41e9" key="#[attributes.headers.token default null]" objectStore="Object_store" target="loginStatus" />
+		<choice doc:name="Choice" doc:id="808113a7-636a-4e15-8917-8c9b6744e61a" >
+			<when expression="#[vars.loginStatus == false]">
+				<raise-error doc:name="login status is false" doc:id="0b1b87b9-5a9f-4be2-9714-38737a095025" type="APP:SESSION_EXPIRED" description="#[p('message.app.session_expired')]"/>
+			</when>
+			<otherwise >
+				<os:store doc:name="User session extend." doc:id="bd60dcc6-6bb0-4c39-9b79-a1296c46ada0" key="#[attributes.headers.token]" objectStore="Object_store">
+					<os:value ><![CDATA[#[%dw 2.0
+output application/json
+---
+{
+	ttl: (now() as Number) + (p('session.ttl') as Number)
+}]]]></os:value>
+				</os:store>
+				<ee:transform doc:name="Transform Message" doc:id="25b8797f-c828-4b91-bad1-b8ab3f7d23f7">
+			<ee:message>
+				<ee:set-payload><![CDATA[%dw 2.0
+output application/json
+---
+{
+	"place" : "Dashboard",
+	"loginStatus" : vars.loginStatus,
+	"attributes" : attributes.headers.token,
+	"payload" : payload
+	
+}]]></ee:set-payload>
+			</ee:message>
+		</ee:transform>
+			</otherwise>
+		</choice>
+		<error-handler >
+			<on-error-continue enableNotifications="true" logException="true" doc:name="On Error Continue" doc:id="c42fd35a-78aa-49a4-b715-626265dc6340" type="APP:*">
+				<flow-ref doc:name="Flow Reference" doc:id="d7e47052-b6b6-4cac-bd41-f415722c7f22" name="APP-ERROR-SUB-FLOW"/>
+			</on-error-continue>
+		</error-handler>
+	</flow>
+</mule>
