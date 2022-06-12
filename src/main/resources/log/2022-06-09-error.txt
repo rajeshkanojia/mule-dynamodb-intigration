@@ -55,4 +55,43 @@
 }{
   "payload": "SESSION_EXPIRED : SESSION_EXPIRED : Please login again.",
   "date": 1654776885
+}{
+  "payload": "SESSION_EXPIRED : Please login again.",
+  "date": 1654791916
+}{
+  "payload": "SESSION_EXPIRED : Please login again.",
+  "date": 1654793345
+}{
+  "payload": "SESSION_EXPIRED : Please login again.",
+  "date": 1654793500
+}{
+  "payload": "VALIDATION_EXCEPTION : Invalid KeyConditionExpression: Syntax error; token: \"\"\", near: \"\"title\" (Service: AmazonDynamoDBv2; Status Code: 400; Error Code: ValidationException; Request ID: L5P0JA2N5TLANA99V577F1OOPBVV4KQNSO5AEMVJF66Q9ASUAAJG; Proxy: null)",
+  "date": 1654795525
+}{
+  "payload": "VALIDATION_EXCEPTION : Invalid KeyConditionExpression: Syntax error; token: \":\", near: \"=:\"\" (Service: AmazonDynamoDBv2; Status Code: 400; Error Code: ValidationException; Request ID: EJQCECTQF68E8G52K87UTMOO8RVV4KQNSO5AEMVJF66Q9ASUAAJG; Proxy: null)",
+  "date": 1654795599
+}{
+  "payload": "VALIDATION_EXCEPTION : Invalid KeyConditionExpression: Syntax error; token: \":\", near: \"=:\"\" (Service: AmazonDynamoDBv2; Status Code: 400; Error Code: ValidationException; Request ID: 9D8CKMCADKVE8HGLV9TE8O76RFVV4KQNSO5AEMVJF66Q9ASUAAJG; Proxy: null)",
+  "date": 1654795609
+}{
+  "payload": "VALIDATION_EXCEPTION : Can not use both expression and non-expression parameters in the same request: Non-expression parameters: {KeyConditions} Expression parameters: {KeyConditionExpression} (Service: AmazonDynamoDBv2; Status Code: 400; Error Code: ValidationException; Request ID: GIMI3C7EITJ8PG8RUQNF7ILDSNVV4KQNSO5AEMVJF66Q9ASUAAJG; Proxy: null)",
+  "date": 1654796525
+}{
+  "payload": "VALIDATION_EXCEPTION : Invalid KeyConditionExpression: An expression attribute value used in expression is not defined; attribute value: :title (Service: AmazonDynamoDBv2; Status Code: 400; Error Code: ValidationException; Request ID: CP40L4GLUVSF33FD5LK3U5N0GNVV4KQNSO5AEMVJF66Q9ASUAAJG; Proxy: null)",
+  "date": 1654796606
+}{
+  "payload": "VALIDATION_EXCEPTION : Invalid KeyConditionExpression: An expression attribute value used in expression is not defined; attribute value: :title (Service: AmazonDynamoDBv2; Status Code: 400; Error Code: ValidationException; Request ID: IU31P4V5J3TK9DJ901JV8S4SINVV4KQNSO5AEMVJF66Q9ASUAAJG; Proxy: null)",
+  "date": 1654796607
+}{
+  "payload": "VALIDATION_EXCEPTION : Invalid KeyConditionExpression: Attribute name is a reserved keyword; reserved keyword: type (Service: AmazonDynamoDBv2; Status Code: 400; Error Code: ValidationException; Request ID: 5HRVEQ25JOATMGCRVHHMPS7NKJVV4KQNSO5AEMVJF66Q9ASUAAJG; Proxy: null)",
+  "date": 1654797163
+}{
+  "payload": "VALIDATION_EXCEPTION : Invalid KeyConditionExpression: Syntax error; token: \"'\", near: \"AND 'type\" (Service: AmazonDynamoDBv2; Status Code: 400; Error Code: ValidationException; Request ID: 0859J5SUJNIAD3R6QB5KHQFKMJVV4KQNSO5AEMVJF66Q9ASUAAJG; Proxy: null)",
+  "date": 1654797224
+}{
+  "payload": "VALIDATION_EXCEPTION : Invalid KeyConditionExpression: Syntax error; token: \"'\", near: \"AND 'type\" (Service: AmazonDynamoDBv2; Status Code: 400; Error Code: ValidationException; Request ID: F9KT3C8SSAO2J0SEI4NDV0MHDRVV4KQNSO5AEMVJF66Q9ASUAAJG; Proxy: null)",
+  "date": 1654797225
+}{
+  "payload": "VALIDATION_EXCEPTION : Invalid KeyConditionExpression: Syntax error; token: \"\"\", near: \"AND \"type\" (Service: AmazonDynamoDBv2; Status Code: 400; Error Code: ValidationException; Request ID: J5RT86ELHCL9JRR9R820HHBPJBVV4KQNSO5AEMVJF66Q9ASUAAJG; Proxy: null)",
+  "date": 1654797315
 }

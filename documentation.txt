@@ -1,0 +1,38 @@
+Project Name : Mule DynamoDB Integration
+Project Desc : This is an dummy project to understand how various connectors in mulesoft works.
+
+Connector Used:-
+	Amazon DynamoDB
+	Amazon S3 Bucket
+	File
+	HTTP
+	Object Store
+	Salesforce
+	Secure Properties
+	Validation
+	Global Error Handler
+
+Purpose of connectors:-
+	
+	Amazon DynamoDB:- This connector is used to store the netflix records.
+	Amazon S3 Bucket:- Using this connector the store the error logs occurred during execution of application.
+	File:- Initial place to log all the error, this move the log to S3.
+	HTTP:- For various listener operation.
+	Object Store:- To store the login status token of the user and restrict un-authorised access.
+	Salesforce:- We are storing the user related details in salesforce like name, email and password.
+	Secure Propertied:- Adding extra layer of security for the credentials of various platforms.
+	Validation:- To validate input data.
+	Global Error Handler:- To handle various errors at global level.
+
+Modules:-
+	Registration
+	Login
+	Password Reset
+	Dashboard
+	DynamoDB
+	S3 Bucket
+	
+
+
+
+

@@ -3,7 +3,7 @@ output application/json
 ---
 {
 	"id" : {"s": payload."id" as String},
-	"type" : {"s": if(isBlank(payload."type")) "NA" else payload."type"},
+	"category" : {"s": if(isBlank(payload."category")) "NA" else payload."category"},
 	"title" : {"s": if(isBlank(payload."title")) "NA" else payload."title"},
 	"director": {"ss" : payload.director default ["NA"]},
 	"cast" : {"ss" : payload."cast" default ["NA"]},

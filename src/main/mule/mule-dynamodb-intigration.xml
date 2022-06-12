@@ -59,17 +59,29 @@ output application/json
 				</ee:message>
 			</ee:transform>
 				<dynamodb:put-item doc:name="Put item" doc:id="08349eeb-709d-49ce-b868-f81bd0640a77" config-ref="Amazon_DynamoDB_Configuration" tableName="netflix">
-					<dynamodb:item ><![CDATA[#[pay]]]></dynamodb:item>
 				</dynamodb:put-item>
-				<ee:transform doc:name="Transform Message" doc:id="fba65178-fd9e-41f7-a882-df0c77dc3459">
-					<ee:message>
-						<ee:set-payload><![CDATA[%dw 2.0
+				<choice doc:name="Choice" doc:id="2c4b4a5e-92c0-4a6c-892d-2b2ec8cd1847" >
+					<when expression="#[isEmpty(payload.attributes) == false]">
+						<ee:transform doc:name="Transform Message" doc:id="eb520413-9c45-4445-b182-5ed458f0a073" >
+							<ee:message >
+								<ee:set-payload ><![CDATA[%dw 2.0
 output application/json
 ---
 payload]]></ee:set-payload>
-					</ee:message>
-				</ee:transform>
-				<file:write doc:name="Write" doc:id="c5a6ded3-03b4-474f-bb1b-909b9dee56d7" config-ref="File_Config" path="C:\Users\Rajesh\Documents\mulesoft\processedData.json" mode="APPEND" />
+							</ee:message>
+						</ee:transform>
+					</when>
+					<otherwise >
+						<ee:transform doc:name="Transform Message" doc:id="733c5225-4f82-43d0-b042-2f3eef98096a" >
+							<ee:message >
+								<ee:set-payload ><![CDATA[%dw 2.0
+output application/json
+---
+payload]]></ee:set-payload>
+							</ee:message>
+						</ee:transform>
+					</otherwise>
+				</choice>
 			</otherwise>
 		</choice>
 		<error-handler>
@@ -78,44 +90,6 @@ payload]]></ee:set-payload>
 				<flow-ref doc:name="Flow Reference" doc:id="1a6bbf27-ef49-49b8-9d10-9710276ba89f" name="mule-s3buckt-intigrationFlow"/>
 			</on-error-propagate>
 		</error-handler>
-	</flow>
-	<flow name="mule-dynamodb-intigrationFlow1" doc:id="328adf2d-34eb-4859-a553-dd80e00a26de" >
-		<http:listener doc:name="Listener" doc:id="266fdf68-70b0-4983-9f81-833c2cbb4540" config-ref="localhost" path="/dynamo" allowedMethods="GET"/>
-		<os:contains doc:name="Check for token key in Object Store" doc:id="1e2f25fd-ba12-4f35-a235-64ffdb6dcfd6" key="#[attributes.headers.token]" objectStore="Object_store" target="loginStatus"/>
-		<choice doc:name="Choice" doc:id="e8595b55-3e5e-48fa-8c3f-739ec60a20e8" >
-			<when expression="#[vars.loginStatus == false]">
-				<raise-error doc:name="login status is false" doc:id="0f30b583-46e3-4fc2-a9d3-5d4bb70dccc7" type="APP:SESSION_EXPIRED" description="#[p('message.app.session_expired')]"/>
-			</when>
-			<otherwise >
-			
-				<os:store doc:name="User session extend." doc:id="9dc5506f-99d0-4121-a61c-edb11363190e" key="#[attributes.headers.token]">
-					<os:value ><![CDATA[#[%dw 2.0
-output application/json
----
-{
-	ttl: (now() as Number) + (p('session.ttl') as Number)
-}]]]></os:value>
-				</os:store>
-				<dynamodb:get-item doc:name="Get item" doc:id="5cfc0c82-396f-4e59-ab15-0dcde4277638" config-ref="Amazon_DynamoDB_Configuration" tableName="netflix">
-					<reconnect />
-					<dynamodb:key><![CDATA[#[%dw 2.0
-output application/json
----
-{
-	"title": {"S": "Dick Johnson Is Dead"},
-	"type": {"S": "Movie"}
-}]]]></dynamodb:key>
-				</dynamodb:get-item>
-				<ee:transform doc:name="Transform Message" doc:id="0891146d-20fc-4275-abcf-4f8988322f71" >
-					<ee:message >
-						<ee:set-payload ><![CDATA[%dw 2.0
-output application/json
----
-payload]]></ee:set-payload>
-					</ee:message>
-				</ee:transform>
-			</otherwise>
-		</choice>
 	</flow>
 	<flow name="mule-dynamodb-intigrationFlow2" doc:id="d6dd79fe-9de1-47b2-95b7-f144e5e17c48" >
 		<http:listener doc:name="Listener" doc:id="04df3e4e-3919-436b-a4b9-868cef20fe14" config-ref="localhost" path="/dynamo" allowedMethods="DELETE"/>
@@ -156,5 +130,109 @@ output application/json
 		</ee:transform>
 			</otherwise>
 		</choice>
+	</flow>
+	<flow name="mule-dynamodb-intigration-Scan-Flow" doc:id="2f45e793-a27a-4b5c-8497-c281130474c2" >
+		<http:listener doc:name="Listener" doc:id="f2fd982c-fbd7-4f06-aa61-9f9d99e68f29" config-ref="localhost" path="/scan"/>
+		<set-variable value="#[':title' : {'S' : 'Dick Johnson Is Dead'}]" doc:name="title" doc:id="5a9fba9b-925a-42ce-beea-dc4b3b069263" variableName="key"/>
+		<set-variable value="#[':category' : {'S' : 'Movie'}]" doc:name="category" doc:id="0d8f843c-a6ae-4b27-ae22-8a1554bdde02" variableName='category'/>
+		<dynamodb:scan doc:name="Scan" doc:id="9cd07d59-0d3f-4832-a468-fb94e93bca3a" config-ref="Amazon_DynamoDB_Configuration" tableName="netflix" select="ALL_ATTRIBUTES">
+		</dynamodb:scan>
+		<ee:transform doc:name="Transform Message" doc:id="50dbe967-87d5-49dd-b0c9-be3cf77257d0" >
+			<ee:message >
+				<ee:set-payload ><![CDATA[%dw 2.0
+output application/json
+---
+payload]]></ee:set-payload>
+			</ee:message>
+		</ee:transform>
+	</flow>
+	<flow name="mule-dynamodb-intigration-Get-Item-Flow" doc:id="328adf2d-34eb-4859-a553-dd80e00a26de">
+		<http:listener doc:name="Listener" doc:id="266fdf68-70b0-4983-9f81-833c2cbb4540" config-ref="localhost" path="/dynamo" allowedMethods="GET" />
+		<os:contains doc:name="Check for token key in Object Store" doc:id="1e2f25fd-ba12-4f35-a235-64ffdb6dcfd6" key="#[attributes.headers.token]" objectStore="Object_store" target="loginStatus" />
+		<choice doc:name="Choice" doc:id="e8595b55-3e5e-48fa-8c3f-739ec60a20e8">
+			<when expression="#[vars.loginStatus == false]">
+				<raise-error doc:name="login status is false" doc:id="0f30b583-46e3-4fc2-a9d3-5d4bb70dccc7" type="APP:SESSION_EXPIRED" description="#[p('message.app.session_expired')]" />
+			</when>
+			<otherwise>
+			
+				<os:store doc:name="User session extend." doc:id="9dc5506f-99d0-4121-a61c-edb11363190e" key="#[attributes.headers.token]">
+					<os:value><![CDATA[#[%dw 2.0
+output application/json
+---
+{
+	ttl: (now() as Number) + (p('session.ttl') as Number)
+}]]]></os:value>
+				</os:store>
+				<dynamodb:get-item doc:name="Get item" doc:id="5cfc0c82-396f-4e59-ab15-0dcde4277638" config-ref="Amazon_DynamoDB_Configuration" tableName="netflix">
+					<reconnect />
+					<dynamodb:key><![CDATA[#[%dw 2.0
+output application/json
+---
+{
+	"title": {"S": "Dick Johnson Is Dead"},
+	"type": {"S": "Movie"}
+}]]]></dynamodb:key>
+				</dynamodb:get-item>
+				<ee:transform doc:name="Transform Message" doc:id="0891146d-20fc-4275-abcf-4f8988322f71">
+					<ee:message>
+						<ee:set-payload><![CDATA[%dw 2.0
+output application/json
+---
+payload]]></ee:set-payload>
+					</ee:message>
+				</ee:transform>
+			</otherwise>
+		</choice>
+	</flow>
+	<flow name="mule-dynamodb-intigrationFlow1" doc:id="f168519c-0bf8-400d-b81b-e95d126804f5" >
+		<http:listener doc:name="Listener" doc:id="a2a618cb-9bce-44fc-9673-75016e9b292a" config-ref="localhost" path="/xml-upload"/>
+		<ee:transform doc:name="Transform Message" doc:id="8b51a52a-447b-4be0-b0ad-468e6cfbafd1" >
+			<ee:message >
+				<ee:set-payload ><![CDATA[%dw 2.0
+output application/json
+fun arrayElement(inputArr : Array) = 
+	if( sizeOf(inputArr) > 0) inputArr else	["NA"] 
+---
+payload.parts.netflix.content map(item, index) -> {
+	"id": item."show_id" as String,
+	"category": item."type" as String,
+	"title" : item.title as String,
+	"director" : arrayElement(item."director" splitBy (",") filter(i, index) -> i != ""),
+	"cast" : arrayElement(item."cast" splitBy(",") filter(i, index) -> i != ""),
+	"country" : item."country" as String,
+	"release_year" : item."release_year" as String,
+	"date_added" : item."date_added" as String,
+	"rating" : item."rating" as String,
+	"duration" : item."duration" as String,
+	"geners" : arrayElement(item."listed_in" splitBy(",") filter(i, index) -> i != ""),
+    "description" : item."description" as String	
+		
+}]]></ee:set-payload>
+			</ee:message>
+		</ee:transform>
+		<foreach doc:name="For Each" doc:id="3aa147ab-c317-40cb-bda7-27fa16e0b905" collection="#[payload]">
+
+				<ee:transform doc:name="prepare json for dynamodb" doc:id="309934d3-4ea6-46c7-a05c-1301271deb45">
+				<ee:message>
+						<ee:set-payload resource="dwl/prepare-json-for-dynamodb.dwl" />
+				</ee:message>
+			</ee:transform>
+			<dynamodb:put-item tableName="netflix" doc:name="Put item" doc:id="030099d7-14bd-4723-9feb-24a57737451c" config-ref="Amazon_DynamoDB_Configuration"/>
+		
+
+		</foreach>
+	</flow>
+	<flow name="mule-dynamodb-intigration-Query-Flow" doc:id="664f13f4-209f-42df-869d-6ed2c1deae78" >
+		<http:listener doc:name="Listener" doc:id="d10e7169-bea8-4bb2-9df6-a06d9d897eb2" config-ref="localhost" path="/query"/>
+		<set-variable value='#[%dw 2.0&#10;output application/json&#10;---&#10;{&#10;	":title" : {"S" : "Dick Johnson Is Dead"},&#10;	":category" : {"S" : "Movie"}&#10;}]' doc:name="title" doc:id="53a80713-3088-4174-93d2-f20170555c4d" variableName="title"/>
+		<set-variable value='#[%dw 2.0&#10;output application/json&#10;---&#10;{&#10;	"category" : {&#10;		"S" : "Movie"&#10;	}&#10;}]' doc:name="category" doc:id="46ff4366-b650-4960-86d5-c77ca0d63156" variableName="category" />
+		<ee:transform doc:name="Transform Message" doc:id="2d682724-1cb9-4a55-8caf-5de7cf507c99" >
+			<ee:message >
+				<ee:set-payload ><![CDATA[%dw 2.0
+output application/json
+---
+payload]]></ee:set-payload>
+			</ee:message>
+		</ee:transform>
 	</flow>
 </mule>

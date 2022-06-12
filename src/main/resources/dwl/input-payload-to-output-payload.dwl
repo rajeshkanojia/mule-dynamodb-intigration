@@ -7,7 +7,7 @@ fun arrayElement(inputArr : Array) =
 
 {
 	"id": payload."show_id" as String,
-	"type": payload."type" as String,
+	"category": payload."type" as String,
 	"title" : payload.title as String,
 	"director" : arrayElement(payload."director" splitBy (",") filter(item, index) -> item != ""),
 	"cast" : arrayElement(payload."cast" splitBy(",") filter(item, index) -> item != ""),

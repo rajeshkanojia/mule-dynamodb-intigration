@@ -1,0 +1,16 @@
+{
+  "payload": "VALIDATION_EXCEPTION : Invalid KeyConditionExpression: An expression attribute value used in expression is not defined; attribute value: :title (Service: AmazonDynamoDBv2; Status Code: 400; Error Code: ValidationException; Request ID: DUA0E0PEM92OOI2MQ2KQH0PC1FVV4KQNSO5AEMVJF66Q9ASUAAJG; Proxy: null)",
+  "date": 1654930636
+}{
+  "payload": "VALIDATION_EXCEPTION : Invalid KeyConditionExpression: An expression attribute value used in expression is not defined; attribute value: :title (Service: AmazonDynamoDBv2; Status Code: 400; Error Code: ValidationException; Request ID: MR5OIBKTD2K6QQM4MU4CB12ILBVV4KQNSO5AEMVJF66Q9ASUAAJG; Proxy: null)",
+  "date": 1654931299
+}{
+  "payload": "VALIDATION_EXCEPTION : Invalid KeyConditionExpression: An expression attribute value used in expression is not defined; attribute value: :title (Service: AmazonDynamoDBv2; Status Code: 400; Error Code: ValidationException; Request ID: K0SSGV5PKJML7BEKCSB3VCU8HVVV4KQNSO5AEMVJF66Q9ASUAAJG; Proxy: null)",
+  "date": 1654931307
+}{
+  "payload": "VALIDATION_EXCEPTION : Invalid KeyConditionExpression: An expression attribute value used in expression is not defined; attribute value: :category (Service: AmazonDynamoDBv2; Status Code: 400; Error Code: ValidationException; Request ID: EBLMHL1NE14IC0DSLVLM4DIVIJVV4KQNSO5AEMVJF66Q9ASUAAJG; Proxy: null)",
+  "date": 1654938052
+}{
+  "payload": "VALIDATION_EXCEPTION : Invalid KeyConditionExpression: An expression attribute value used in expression is not defined; attribute value: :category (Service: AmazonDynamoDBv2; Status Code: 400; Error Code: ValidationException; Request ID: PCIAVJDF6Q0382HCCCE2JD5NURVV4KQNSO5AEMVJF66Q9ASUAAJG; Proxy: null)",
+  "date": 1654938058
+}
