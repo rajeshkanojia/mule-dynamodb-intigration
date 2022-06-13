@@ -12,3 +12,10 @@ message:
     invalid_details : "INVALID_DETAILS : Invalid username or password."
     account_not_activated : "ACCOUNT_NOT_ACTIVATED : Account is not activated."
     session_expired : "Please login again."
+    registration_email_missing : "Email field is missing."
+    registration_username_missing : "Username field is missing."
+    registration_name_missing : "Name field is missing."
+    registration_email_already_exists : "Provided email id is already registered with us."
+    registration_username_not_available : "Username not available."
+    registration_salesforce_issue : "Facing some issue. Please try again later."
+    

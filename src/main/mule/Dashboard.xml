@@ -1,11 +1,12 @@
 <?xml version="1.0" encoding="UTF-8"?>
 
-<mule xmlns:http="http://www.mulesoft.org/schema/mule/http" xmlns:os="http://www.mulesoft.org/schema/mule/os"
-	xmlns:ee="http://www.mulesoft.org/schema/mule/ee/core"
-	xmlns="http://www.mulesoft.org/schema/mule/core" xmlns:doc="http://www.mulesoft.org/schema/mule/documentation" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd
+<mule xmlns:salesforce="http://www.mulesoft.org/schema/mule/salesforce" xmlns:http="http://www.mulesoft.org/schema/mule/http"
+	xmlns:os="http://www.mulesoft.org/schema/mule/os"
+	xmlns:ee="http://www.mulesoft.org/schema/mule/ee/core" xmlns="http://www.mulesoft.org/schema/mule/core" xmlns:doc="http://www.mulesoft.org/schema/mule/documentation" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd
 http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd
 http://www.mulesoft.org/schema/mule/os http://www.mulesoft.org/schema/mule/os/current/mule-os.xsd
-http://www.mulesoft.org/schema/mule/http http://www.mulesoft.org/schema/mule/http/current/mule-http.xsd">
+http://www.mulesoft.org/schema/mule/http http://www.mulesoft.org/schema/mule/http/current/mule-http.xsd
+http://www.mulesoft.org/schema/mule/salesforce http://www.mulesoft.org/schema/mule/salesforce/current/mule-salesforce.xsd">
 	<flow name="DashboardFlow" doc:id="b23795ab-e004-42a7-8013-5db76d94b47b" >
 		<http:listener doc:name="Listener" doc:id="95229c8a-3e63-4183-b05b-7d89f6f3bb88" config-ref="localhost" path="/dashboard"/>
 		<os:contains doc:name="Check for token key in Object Store" doc:id="860bd961-c2eb-4fcd-8769-d1a19c5c41e9" key="#[attributes.headers.token default null]" objectStore="Object_store" target="loginStatus" />
@@ -43,5 +44,19 @@ output application/json
 				<flow-ref doc:name="Flow Reference" doc:id="d7e47052-b6b6-4cac-bd41-f415722c7f22" name="APP-ERROR-SUB-FLOW"/>
 			</on-error-continue>
 		</error-handler>
+	</flow>
+	<flow name="Get-Users-Dashboard-Flow" doc:id="589b55f0-1a2d-49cc-8c8c-03e957517045" >
+		<http:listener doc:name="Listener" doc:id="3a10a717-d9a0-4ddb-8faa-1e8f5c72b660" config-ref="localhost" path="/getUsers"/>
+		<salesforce:query-all doc:name="Query all" doc:id="b09d8ddf-52be-4508-833d-2bbfc359bb14" config-ref="Salesforce_Config">
+			<salesforce:salesforce-query ><![CDATA[SELECT Name, email__c, username__c, verification_link__c FROM Mulesoft_User__C]]></salesforce:salesforce-query>
+		</salesforce:query-all>
+		<ee:transform doc:name="Transform Message" doc:id="64958395-dceb-4f1b-b20a-6cf25643a8ed" >
+			<ee:message >
+				<ee:set-payload ><![CDATA[%dw 2.0
+output application/json
+---
+payload]]></ee:set-payload>
+			</ee:message>
+		</ee:transform>
 	</flow>
 </mule>

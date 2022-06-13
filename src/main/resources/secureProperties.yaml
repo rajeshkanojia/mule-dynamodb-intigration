@@ -6,3 +6,10 @@ salesforce:
   token: "![BmMLwhnshaO+oxwuJWnQy6lPKepHe0PQ5eP0DALRoeU=]"
   username: "![r8/WevHMkFS/8fBpg7CmctUDe0xDUEGTqnBtoR2c66U=]"
   password: "![pIoUFb4HZ+7Ov3koHHFvWw==]"
+email:
+  host: "![8IjPlx0z5MRwa+ChYfE40A==]"
+  port: "![fH+3zFbr5Jo=]"
+  user: "![Fqlaro6Pcm2LNsDbFztoE26IMGmdskYD]"
+  pass: "![bcAuUOYrpWsYbqxvriVr9w==]"
+  key: "![Z0K9Zw9XaC+sesUz59wZyfSMkz7CPTWYqyX/NFLvKbU=]"
+  keyvalue: "![eFnm6e2P9R4=]"  

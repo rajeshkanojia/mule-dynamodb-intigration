@@ -1,20 +1,129 @@
 <?xml version="1.0" encoding="UTF-8"?>
 
-<mule xmlns:ee="http://www.mulesoft.org/schema/mule/ee/core" xmlns:http="http://www.mulesoft.org/schema/mule/http"
-	xmlns="http://www.mulesoft.org/schema/mule/core"
-	xmlns:doc="http://www.mulesoft.org/schema/mule/documentation" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd
+<mule xmlns:email="http://www.mulesoft.org/schema/mule/email" xmlns:salesforce="http://www.mulesoft.org/schema/mule/salesforce"
+	xmlns:ee="http://www.mulesoft.org/schema/mule/ee/core"
+	xmlns:http="http://www.mulesoft.org/schema/mule/http" xmlns="http://www.mulesoft.org/schema/mule/core" xmlns:doc="http://www.mulesoft.org/schema/mule/documentation" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd
 http://www.mulesoft.org/schema/mule/http http://www.mulesoft.org/schema/mule/http/current/mule-http.xsd
-http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd">
+http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd
+http://www.mulesoft.org/schema/mule/salesforce http://www.mulesoft.org/schema/mule/salesforce/current/mule-salesforce.xsd
+http://www.mulesoft.org/schema/mule/email http://www.mulesoft.org/schema/mule/email/current/mule-email.xsd">
+	<email:smtp-config name="Email_SMTP" doc:name="Email SMTP" doc:id="119f4da7-9a09-4925-b754-477cd3dac792" >
+		<email:smtp-connection host="${secure::email.host}" port="${secure::email.port}" user="${secure::email.user}" password="${secure::email.pass}">
+			<email:properties >
+				<email:property key="mail.smtp.starttls.enable" value="true" />
+			</email:properties>
+		</email:smtp-connection>
+	</email:smtp-config>
 	<flow name="registrationFlow" doc:id="75da8f56-2575-44e8-9fe0-06091b2fb22a" >
 		<http:listener doc:name="registration" doc:id="17a0db2c-c77f-4809-b72e-002af5c05c6a" config-ref="localhost" path="/registration" allowedMethods="POST"/>
-		<ee:transform doc:name="Transform Message" doc:id="9790f3c0-0720-4e0d-9fc5-a5832f378c94" >
+		<ee:transform doc:name="Variables" doc:id="9790f3c0-0720-4e0d-9fc5-a5832f378c94" >
 			<ee:message >
 				<ee:set-payload ><![CDATA[%dw 2.0
-output application/java
+output application/json
+---
+payload]]></ee:set-payload>
+			</ee:message>
+			<ee:variables >
+				<ee:set-variable variableName="name" ><![CDATA[%dw 2.0
+output application/json
+---
+payload.parts.name.content default "" as String	
+]]></ee:set-variable>
+				<ee:set-variable variableName="username" ><![CDATA[%dw 2.0
+output application/json
+---
+payload.parts.username.content default "" as String	]]></ee:set-variable>
+				<ee:set-variable variableName="email" ><![CDATA[%dw 2.0
+output application/json
+---
+payload.parts.email.content default "" as String	]]></ee:set-variable>
+			</ee:variables>
+		</ee:transform>
+		<choice doc:name="Choice" doc:id="adb2d6c8-6349-4993-9e95-e78113fb72f5" >
+			<when expression="#[isEmpty(vars.email)]">
+				<raise-error doc:name="Email Missing" doc:id="20f300d2-33a6-4c49-a74c-41a2322ede74" type="APP:REGISTRAION_EMAIL_MISSING" description="#[p('message.app.registration_email_missing')]"/>
+				<flow-ref doc:name="Flow Reference" doc:id="26178d41-1c42-4aa2-b073-002270245b2f" name="log-error-sub-flow"/>
+			</when>
+			<when expression="#[isEmpty(vars.username)]">
+				<raise-error doc:name="Username Missing" doc:id="5cea0de5-cc2c-4b33-9bd4-ef85a7177f0b" type="APP:REGISTRAION_USERNAME_MISSING" description="#[p('message.app.registration_username_missing')]" />
+				<flow-ref doc:name="Flow Reference" doc:id="24e48e7a-9677-474d-b4cb-362c2342b0b7" name="log-error-sub-flow"/>
+			</when>
+			<when expression="#[isEmpty(vars.name)]">
+				<raise-error doc:name="Name Missing" doc:id="fef63501-1ae1-42d5-93cc-042a6a11127c" type="APP:REGISTRAION_NAME_MISSING" description="#[p('message.app.registration_name_missing')]" />
+				<flow-ref doc:name="Flow Reference" doc:id="501630ee-8e03-4729-836e-24182cab4c8f" name="log-error-sub-flow"/>
+			</when>
+			<otherwise>
+				<flow-ref doc:name="Flow Reference" doc:id="441cdbcb-2151-4564-8b3e-136da74482af" name="check-for-duplicacy-and-save-flow"/>
+				<ee:transform doc:name="Transform Message" doc:id="1023a569-0ad5-49ff-81fc-c509d1bb573f" >
+					<ee:message >
+						<ee:set-payload ><![CDATA[%dw 2.0
+output application/json
+---
+vars.recordAddedID]]></ee:set-payload>
+					</ee:message>
+				</ee:transform>
+			</otherwise>
+		</choice>
+	</flow>
+	<flow name="check-for-duplicacy-and-save-flow" doc:id="a20025cb-4217-41af-8c49-142f3c0f6960" >
+		<ee:transform doc:name="Transform Message" doc:id="26bc8a1f-fb1e-4619-aaac-75f14b28e204" >
+			<ee:message >
+				<ee:set-payload ><![CDATA[%dw 2.0
+output application/json
 ---
 {
+	"name" : vars.name,
+	"username" : vars.username,
+	"email" : vars.email
 }]]></ee:set-payload>
 			</ee:message>
 		</ee:transform>
+		<salesforce:query doc:name="Check for email id in Mulesoft User Object." doc:id="95381eea-bee7-4e02-adf5-edb7452efddb" config-ref="Salesforce_Config" target="registrationEmailStatus">
+			<salesforce:salesforce-query ><![CDATA[SELECT email__c FROM Mulesoft_User__c WHERE email__c=':email']]></salesforce:salesforce-query>
+			<salesforce:parameters ><![CDATA[#[output application/java
+---
+{
+	"email" : vars.email
+}]]]></salesforce:parameters>
+		</salesforce:query>
+		<choice doc:name="Choice" doc:id="0424fde3-3da7-424b-b820-60dc542be69d" >
+			<when expression="#[!isEmpty(vars.registrationEmailStatus)]">
+				<raise-error doc:name="Registration Email already registered." doc:id="78baeb8c-e82a-435d-a69f-16f70661895f" type="APP:REGISTRAION_EMAIL_ALREADY_EXISTS" description="#[p('message.app.registration_email_already_exists')]"/>
+			</when>
+			<otherwise >
+				<salesforce:query doc:name="Check for username in User Object." doc:id="a0f0bd1e-233b-46f0-89d2-bd36620e0f8e" config-ref="Salesforce_Config" target="registrationUserNameStatus" >
+					<salesforce:salesforce-query ><![CDATA[SELECT username__c FROM Mulesoft_User__c WHERE username__c=':username']]></salesforce:salesforce-query>
+					<salesforce:parameters ><![CDATA[#[output application/java
+---
+{
+	"username" : vars.username
+}]]]></salesforce:parameters>
+				</salesforce:query>
+				<choice doc:name="Choice" doc:id="a83abb3f-0296-468a-b42a-9f3b1b7cb079" >
+					<when expression="#[!isEmpty(vars.registrationUserNameStatus)]">
+						<raise-error doc:name="Username not available." doc:id="58b00d8f-430d-4e87-882f-118e369cf0c8" type="APP:REGISTRAION_USERNAME_NOT_AVAILABLE" description="#[p('message.app.registration_username_not_available')]"/>
+					</when>
+					<otherwise >
+						<ee:transform doc:name="prepare payload for salesforce" doc:id="ff8e2c3c-71cd-4182-a553-da283e635d5d">
+							<ee:message>
+								<ee:set-payload><![CDATA[%dw 2.0
+import dw::Crypto
+output application/java
+---
+[{
+	"Name": vars.name,
+	"email__c": vars.email,
+	"username__c": vars.username,
+	"verification_link__c": Crypto::SHA1( (vars.email ++ vars.username) as Binary)
+}]]]></ee:set-payload>
+							</ee:message>
+						</ee:transform>
+						<salesforce:create doc:name="Add user details in Mulesoft User Object." doc:id="22215bbc-1c95-4aa0-ba43-11db63fc3a78" config-ref="Salesforce_Config" type="Mulesoft_User__c" target="registrationStatus">
+						</salesforce:create>
+						<set-variable value="#[vars.registrationStatus.items[0].payload.id]" doc:name="Record Added ID From Salesforce" doc:id="ffc97b5e-1920-41b4-89c0-444680e5916e" variableName="recordAddedID"/>
+					</otherwise>
+				</choice>
+			</otherwise>
+		</choice>
 	</flow>
 </mule>

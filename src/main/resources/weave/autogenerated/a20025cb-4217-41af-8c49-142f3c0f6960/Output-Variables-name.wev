@@ -1,0 +1,4 @@
+%dw 2.0
+
+type auto_a20025cb_4217_41af_8c49_142f3c0f6960_Output_Variables_name = String
+
