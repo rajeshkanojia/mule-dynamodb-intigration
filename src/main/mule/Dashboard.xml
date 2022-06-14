@@ -48,7 +48,7 @@ output application/json
 	<flow name="Get-Users-Dashboard-Flow" doc:id="589b55f0-1a2d-49cc-8c8c-03e957517045" >
 		<http:listener doc:name="Listener" doc:id="3a10a717-d9a0-4ddb-8faa-1e8f5c72b660" config-ref="localhost" path="/getUsers"/>
 		<salesforce:query-all doc:name="Query all" doc:id="b09d8ddf-52be-4508-833d-2bbfc359bb14" config-ref="Salesforce_Config">
-			<salesforce:salesforce-query ><![CDATA[SELECT Name, email__c, username__c, verification_link__c FROM Mulesoft_User__C]]></salesforce:salesforce-query>
+			<salesforce:salesforce-query ><![CDATA[SELECT Id, Name, email__c, username__c, verification_link__c FROM Mulesoft_User__C]]></salesforce:salesforce-query>
 		</salesforce:query-all>
 		<ee:transform doc:name="Transform Message" doc:id="64958395-dceb-4f1b-b20a-6cf25643a8ed" >
 			<ee:message >

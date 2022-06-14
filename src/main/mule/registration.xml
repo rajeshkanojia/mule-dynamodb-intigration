@@ -42,50 +42,28 @@ payload.parts.email.content default "" as String	]]></ee:set-variable>
 		<choice doc:name="Choice" doc:id="adb2d6c8-6349-4993-9e95-e78113fb72f5" >
 			<when expression="#[isEmpty(vars.email)]">
 				<raise-error doc:name="Email Missing" doc:id="20f300d2-33a6-4c49-a74c-41a2322ede74" type="APP:REGISTRAION_EMAIL_MISSING" description="#[p('message.app.registration_email_missing')]"/>
-				<flow-ref doc:name="Flow Reference" doc:id="26178d41-1c42-4aa2-b073-002270245b2f" name="log-error-sub-flow"/>
 			</when>
 			<when expression="#[isEmpty(vars.username)]">
 				<raise-error doc:name="Username Missing" doc:id="5cea0de5-cc2c-4b33-9bd4-ef85a7177f0b" type="APP:REGISTRAION_USERNAME_MISSING" description="#[p('message.app.registration_username_missing')]" />
-				<flow-ref doc:name="Flow Reference" doc:id="24e48e7a-9677-474d-b4cb-362c2342b0b7" name="log-error-sub-flow"/>
 			</when>
 			<when expression="#[isEmpty(vars.name)]">
 				<raise-error doc:name="Name Missing" doc:id="fef63501-1ae1-42d5-93cc-042a6a11127c" type="APP:REGISTRAION_NAME_MISSING" description="#[p('message.app.registration_name_missing')]" />
-				<flow-ref doc:name="Flow Reference" doc:id="501630ee-8e03-4729-836e-24182cab4c8f" name="log-error-sub-flow"/>
 			</when>
 			<otherwise>
 				<flow-ref doc:name="Flow Reference" doc:id="441cdbcb-2151-4564-8b3e-136da74482af" name="check-for-duplicacy-and-save-flow"/>
-				<ee:transform doc:name="Transform Message" doc:id="1023a569-0ad5-49ff-81fc-c509d1bb573f" >
-					<ee:message >
-						<ee:set-payload ><![CDATA[%dw 2.0
-output application/json
----
-vars.recordAddedID]]></ee:set-payload>
-					</ee:message>
-				</ee:transform>
 			</otherwise>
 		</choice>
 	</flow>
 	<flow name="check-for-duplicacy-and-save-flow" doc:id="a20025cb-4217-41af-8c49-142f3c0f6960" >
-		<ee:transform doc:name="Transform Message" doc:id="26bc8a1f-fb1e-4619-aaac-75f14b28e204" >
-			<ee:message >
-				<ee:set-payload ><![CDATA[%dw 2.0
-output application/json
----
-{
-	"name" : vars.name,
-	"username" : vars.username,
-	"email" : vars.email
-}]]></ee:set-payload>
-			</ee:message>
-		</ee:transform>
-		<salesforce:query doc:name="Check for email id in Mulesoft User Object." doc:id="95381eea-bee7-4e02-adf5-edb7452efddb" config-ref="Salesforce_Config" target="registrationEmailStatus">
-			<salesforce:salesforce-query ><![CDATA[SELECT email__c FROM Mulesoft_User__c WHERE email__c=':email']]></salesforce:salesforce-query>
-			<salesforce:parameters ><![CDATA[#[output application/java
+		<salesforce:query doc:name="Check for email id in Mulesoft User Object." doc:id="95381eea-bee7-4e02-adf5-edb7452efddb" config-ref="Salesforce_Config">
+			<salesforce:salesforce-query><![CDATA[SELECT email__c FROM Mulesoft_User__c WHERE email__c=':email']]></salesforce:salesforce-query>
+			<salesforce:parameters><![CDATA[#[output application/java
 ---
 {
 	"email" : vars.email
 }]]]></salesforce:parameters>
 		</salesforce:query>
+		<set-variable value="#[payload]" doc:name="Set Variable" doc:id="38a20379-e037-4337-89f7-03a8101df0e6" variableName="registrationEmailStatus"/>
 		<choice doc:name="Choice" doc:id="0424fde3-3da7-424b-b820-60dc542be69d" >
 			<when expression="#[!isEmpty(vars.registrationEmailStatus)]">
 				<raise-error doc:name="Registration Email already registered." doc:id="78baeb8c-e82a-435d-a69f-16f70661895f" type="APP:REGISTRAION_EMAIL_ALREADY_EXISTS" description="#[p('message.app.registration_email_already_exists')]"/>
@@ -104,23 +82,66 @@ output application/json
 						<raise-error doc:name="Username not available." doc:id="58b00d8f-430d-4e87-882f-118e369cf0c8" type="APP:REGISTRAION_USERNAME_NOT_AVAILABLE" description="#[p('message.app.registration_username_not_available')]"/>
 					</when>
 					<otherwise >
+						<set-variable value="#[%dw 2.0 &#10;import dw::Crypto &#10;output application/json &#10;--- &#10;Crypto::SHA1( (vars.email ++ vars.username) as Binary)]" doc:name="verification_link__c" doc:id="76ab8f7d-a3fc-4500-8dc1-28e28e085b68" variableName="verification_link"/>
 						<ee:transform doc:name="prepare payload for salesforce" doc:id="ff8e2c3c-71cd-4182-a553-da283e635d5d">
 							<ee:message>
 								<ee:set-payload><![CDATA[%dw 2.0
-import dw::Crypto
 output application/java
 ---
 [{
 	"Name": vars.name,
 	"email__c": vars.email,
 	"username__c": vars.username,
-	"verification_link__c": Crypto::SHA1( (vars.email ++ vars.username) as Binary)
+	"verification_link__c": vars.verification_link
 }]]]></ee:set-payload>
 							</ee:message>
 						</ee:transform>
 						<salesforce:create doc:name="Add user details in Mulesoft User Object." doc:id="22215bbc-1c95-4aa0-ba43-11db63fc3a78" config-ref="Salesforce_Config" type="Mulesoft_User__c" target="registrationStatus">
 						</salesforce:create>
 						<set-variable value="#[vars.registrationStatus.items[0].payload.id]" doc:name="Record Added ID From Salesforce" doc:id="ffc97b5e-1920-41b4-89c0-444680e5916e" variableName="recordAddedID"/>
+						<choice doc:name="Choice" doc:id="aa6dc436-d5c7-4322-9b01-16e445037cc6" >
+							<when expression="#[isEmpty(vars.recordAddedID)]">
+								<raise-error doc:name="Issue at Salesforce side." doc:id="0201b99d-3410-43fb-8ebd-87e1bfe55f33" description="#[p(message.app.registration_salesforce_issue)]" type="APP:REGISTRAION_SALESFORCE_ISSUE"/>
+							</when>
+							<otherwise >
+								<ee:transform doc:name="Prepare payload for email" doc:id="cbe25f59-fee1-4ae1-99ed-6b68e6a9397a">
+										<ee:message>
+											<ee:set-payload><![CDATA[%dw 2.0
+output application/json
+---
+{
+	"name" : vars.name,
+	"email" : vars.email,
+	"link" : "http://localhost:8081/verification/" ++ vars.verification_link
+}]]></ee:set-payload>
+										</ee:message>
+									</ee:transform>
+								<async doc:name="Async" doc:id="906b3b4a-44b2-4797-bf10-2dc41f9841c5" >
+									<email:send doc:name="Send" doc:id="b7277341-357a-4685-9997-f5093e97f492" config-ref="Email_SMTP" fromAddress="${secure::email.user}" subject="test">
+			<email:to-addresses>
+				<email:to-address value="rajeshkanojiya02@gmail.com" />
+											<email:to-address value="#[payload.email]" />
+			</email:to-addresses>
+			<email:bcc-addresses />
+										<email:body contentType="text/html">
+				<email:content><![CDATA[#[vars.emailTemplate]]]></email:content>
+			</email:body>
+		</email:send>
+								</async>
+								<ee:transform doc:name="Final response" doc:id="92dc1c47-082f-4e43-930d-5ea6e74a07ab">
+										<ee:message>
+											<ee:set-payload><![CDATA[%dw 2.0
+output application/json
+---
+{
+	"msg" : "Congratulation " ++ payload.name ++ " your registration successfully done. Please check below link to verify your account.",
+	"link" : payload.link,
+//	"Id" : vars.recordAddedID
+}]]></ee:set-payload>
+										</ee:message>
+									</ee:transform>
+							</otherwise>
+						</choice>
 					</otherwise>
 				</choice>
 			</otherwise>

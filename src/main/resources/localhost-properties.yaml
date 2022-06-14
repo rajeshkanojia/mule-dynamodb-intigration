@@ -4,6 +4,10 @@ http:
 session:
   ttl : "60000"  #milliseconds
 
+global:
+  placeholder:
+    app : "Mulesoft dummy project."
+
 message:
   app:
     login_detail_missing: "LOGIN_USERNAME_AND_PASSWORD_MISSING : User name and password is missing."
@@ -18,4 +22,6 @@ message:
     registration_email_already_exists : "Provided email id is already registered with us."
     registration_username_not_available : "Username not available."
     registration_salesforce_issue : "Facing some issue. Please try again later."
-    
+    empty_verification_token : "Verification URL is not valid."
+    invalid_verification_token : "Invalid verification token."
+    verification_salesforce_issue : "Facing some issue. Please try again later."

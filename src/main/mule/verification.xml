@@ -1,0 +1,85 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<mule xmlns:email="http://www.mulesoft.org/schema/mule/email" xmlns:salesforce="http://www.mulesoft.org/schema/mule/salesforce"
+	xmlns:ee="http://www.mulesoft.org/schema/mule/ee/core"
+	xmlns:http="http://www.mulesoft.org/schema/mule/http" xmlns="http://www.mulesoft.org/schema/mule/core" xmlns:doc="http://www.mulesoft.org/schema/mule/documentation" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd
+http://www.mulesoft.org/schema/mule/http http://www.mulesoft.org/schema/mule/http/current/mule-http.xsd
+http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd
+http://www.mulesoft.org/schema/mule/salesforce http://www.mulesoft.org/schema/mule/salesforce/current/mule-salesforce.xsd
+http://www.mulesoft.org/schema/mule/email http://www.mulesoft.org/schema/mule/email/current/mule-email.xsd">
+	<flow name="verificationFlow" doc:id="09640e63-b21e-450b-bd92-5c07fc8a4d5d" >
+		<http:listener doc:name="Listener" doc:id="6e0b0d8b-d39e-4927-bf46-4db7e9b23037" config-ref="localhost" path="/verification/{token}" allowedMethods="GET"/>
+		<set-variable value="#[attributes.uriParams.token]" doc:name="verification token" doc:id="940abc01-dad0-4856-9d4d-de455aa007a2" variableName="verification_token"/>
+		<choice doc:name="Choice" doc:id="240d979a-f022-475d-82b4-5dd78d957245" >
+			<when expression="#[isEmpty(vars.verification_token)]">
+				<raise-error doc:name="verification token missing in url." doc:id="62d414fa-75f8-40e0-8bed-7596a14e6b4b" type="APP:EMPTY_VERIFICATION_TOKEN" description="#[p('app.message.empty_verification_token')]"/>
+			</when>
+			<otherwise >
+				<salesforce:query doc:name="Check for verification link" doc:id="15079a8c-70e1-4eb0-abc4-3f1335fdd6bc" config-ref="Salesforce_Config" target="verificationLinkStatus">
+					<salesforce:salesforce-query ><![CDATA[SELECT Id, Name, email__c, verification_link__c FROM Mulesoft_User__c WHERE verification_link__c = ':verificationLink']]></salesforce:salesforce-query>
+					<salesforce:parameters ><![CDATA[#[output application/java
+---
+{
+	"verificationLink" : vars.verification_token
+}]]]></salesforce:parameters>
+				</salesforce:query>
+				<choice doc:name="Choice" doc:id="17b13646-9e0e-4815-8404-59f29b9e0de1">
+					<when expression="#[isEmpty(vars.verificationLinkStatus)]">
+						<raise-error doc:name="Invalid verification token" doc:id="8c258675-98e7-49a0-89bb-2fd58e097507" type="APP:INVALID_VERIFICATION_TOKEN" description="#[p('app.message.invalid_verification_token')]"/>
+					</when>
+					<otherwise >
+						<set-variable value="#[vars.verificationLinkStatus[0].Id]" doc:name="Salesforce ID of the record." doc:id="ccfee60d-6a66-4fd5-b496-6187183e2431" variableName="recordID"/>
+						<set-variable value="#[%dw 2.0&#10;import modules::CustomModule&#10;output application/json&#10;---&#10;CustomModule::randomPassword(16)]" doc:name="Random Password" doc:id="3c659dd8-b6cf-42fc-8605-2c7cdbb4b536" variableName="randomPassword"/>
+						<set-variable value="#[vars.verificationLinkStatus[0].email__c]" doc:name="user email" doc:id="a77bd470-f6c0-4615-92c1-5110341d8dcb" variableName="userEmail"/>
+						<ee:transform doc:name="prepare payload to update the fields" doc:id="0c1d6822-f258-41bb-ac82-390f523dd154">
+					<ee:message>
+						<ee:set-payload><![CDATA[%dw 2.0
+import dw::Crypto
+output application/java
+---
+[{
+	"Id" : vars.recordID as String,
+	"verification_link__c" : "NA",
+	"isActive__c" : true,
+	"password__c" : Crypto::SHA1(vars.randomPassword as Binary) 
+}]
+]]></ee:set-payload>
+					</ee:message>
+				</ee:transform>
+						<salesforce:update doc:name="Update" doc:id="e00fa9d5-600e-418b-bcc3-b7e6ca3b2e2f" config-ref="Salesforce_Config" type="Mulesoft_User__c" target="recordUpdateStatus"/>
+						<choice doc:name="Choice" doc:id="4f1e3e38-eb32-436b-858c-3ccfd5a8f507">
+							<when expression="#[vars.recordUpdateStatus.successful == false]">
+								<raise-error doc:name="Verification salesforce issue" doc:id="f4d37c49-0699-45cf-abcb-05d65ccf5433" type="APP:VERIFICATION_SALESFORCE_ISSUE" description="#[p('app.message.verification_salesforce_issue')]" />
+							</when>
+							<otherwise>
+								<async doc:name="Async" doc:id="ba1f5f26-6daa-47fe-81ee-efde84a701ed">
+									<email:send doc:name="Send password" doc:id="3a9217aa-dc39-4870-b1aa-2ad441e6606a" config-ref="Email_SMTP" subject="Verification Successful" fromAddress="${secure::email.user}">
+										<email:to-addresses>
+											<email:to-address value="#[vars.userEmail]" />
+										</email:to-addresses>
+										<email:body contentType="text/plain">
+											<email:content><![CDATA[#["Your account verified successfully. Here is your password to login." ++ vars.randomPassword]]]></email:content>
+										</email:body>
+									</email:send>
+								</async>
+								<ee:transform doc:name="Transform Message" doc:id="4b401b8e-e3e9-433a-bd6a-1b6840506ce8">
+							<ee:message>
+								<ee:set-payload><![CDATA[%dw 2.0
+output application/json
+---
+{
+	"msg" : "Account verified successfully.",
+	"password" : vars.randomPassword,
+	"update" : vars.recordUpdateStatus.successful
+}
+]]></ee:set-payload>
+							</ee:message>
+						</ee:transform>
+							</otherwise>
+						</choice>
+					</otherwise>
+				</choice>
+			</otherwise>
+		</choice>
+	</flow>
+</mule>
